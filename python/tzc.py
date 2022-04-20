@@ -1,17 +1,20 @@
-import ntpath
+import glob
 import json
+import ntpath
 import os
+import readline
 import shutil
 import subprocess
 from datetime import datetime
 from json import JSONDecodeError
 from pathlib import Path
-import readline, glob
+from shlex import split
+
 import click
 from clk.decorators import argument
 from clk.decorators import group
 from clk.decorators import option
-from clk.decorators import pass_context
+from clk.lib import call, check_output, safe_check_output
 from clk.log import get_logger
 from distlib.compat import raw_input
 from prompt_toolkit import prompt
@@ -23,16 +26,65 @@ LOGGER = get_logger(__name__)
 def exec_command(command, shell=False):
     LOGGER.info(command)
     args = command.split(' ')
-    # return subprocess.run(args, capture_output=True)
     proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell)
     out, err = proc.communicate()
     return out, err, proc.returncode
-    # stream = os.popen(command)
 
 
 @group()
 def tzc():
     """Commands to play with tezos-client"""
+
+
+class SmartPyCli:
+    clk_install_script_path = str(Path.home()) + '/.config/clk/extensions/tezos_client/install-smartpy.sh'
+    dir_path = str(Path.home()) + '/smartpy-cli/'
+    script_path = dir_path + 'SmartPy.sh'
+
+
+class TezosClient:
+    clk_install_script_path = str(Path.home()) + '/.config/clk/extensions/tezos_client/install-tezos-client.sh'
+
+
+def client_version():
+    raw_version = safe_check_output([SmartPyCli.script_path, '--version'],
+                                    stderr=subprocess.PIPE)
+    return raw_version if 'SmartPy Version: ' not in raw_version else raw_version[len('SmartPy Version: '):].strip()
+
+
+def install_smartpy_cli():
+    call(['chmod', 'u+x', SmartPyCli.clk_install_script_path])
+    click.echo(check_output([SmartPyCli.clk_install_script_path]))
+
+
+def install_tezos_client():
+    call(['chmod', 'u+x', TezosClient.clk_install_script_path])
+    click.echo(check_output([TezosClient.clk_install_script_path]))
+
+
+@tzc.command()
+def install():
+    """Install required dependencies such as tezos-client and smartpy-cli"""
+    smpy_version = client_version()
+    if smpy_version:
+        LOGGER.info(f'smartpy-cli {smpy_version} detected: skip')
+    else:
+        install_smartpy_cli()
+
+    tzc_version = safe_check_output(['tezos-client', '--version'])
+    if tzc_version:
+        LOGGER.info(f'tezos-clients {tzc_version} detected: skip')
+    else:
+        install_tezos_client()
+
+
+@tzc.command()
+def uninstall():
+    """Remove required dependencies such as tezos-client and smartpy-cli"""
+    smpy_version = client_version()
+    if smpy_version:
+        LOGGER.info("smartpy-cli detected: skip")
+    install_smartpy_cli()
 
 
 @tzc.group(name="network")
@@ -45,19 +97,18 @@ def tzc_network():
 def set_network(rpc_link):
     """Set the RPC tezos node address"""
     LOGGER.info(f'Configuring tezos-client network with {rpc_link}')
-    os.system(f"tezos-client --endpoint {rpc_link} config update")
-
-    LOGGER.info(f'Configuring tezos-client network with {rpc_link}')
-    proc = subprocess.Popen(["tezos-client", "config", "show"], stderr=subprocess.DEVNULL)
-    (out, err) = proc.communicate()
+    call(["tezos-client", "--endpoint", rpc_link, "config", "update"])
+    LOGGER.info(f'Result:')
+    call(["tezos-client", "config", "show"], stderr=subprocess.DEVNULL)
 
 
 def get_config():
-    out, err, _ = exec_command("tezos-client config show")
-    return json.loads(out)
+    return json.loads(
+        safe_check_output(split("tezos-client config show"))
+    )
 
 
-@tzc_network.command(name="get")
+@tzc_network.command(name="show")
 def show_config():
     """Show tezos-client configuration."""
     config = get_config()
@@ -70,14 +121,12 @@ def tzc_account():
     """Play with accounts"""
 
 
-@tzc_account.command(name="list")
+@tzc_account.command(name="show")
 @option("--no-contracts", default=False, is_flag=True, help="Do not show contracts accounts")
 def show_accounts(no_contracts):
     """List configured accounts usable by the client."""
-
     kind = "addresses" if no_contracts else "contracts"
-    out, err, _ = exec_command("tezos-client list known " + kind)
-    click.echo(out)
+    click.echo(safe_check_output(split("tezos-client list known " + kind)))
 
 
 @tzc.group()
@@ -91,8 +140,7 @@ def transfer():
 @argument("dest", help="The account name or literal address to send the amount in ꜩ")
 def xtz(amount, source, dest):
     """Transfer coin or token"""
-    # tezos-client transfer $(AMOUNT) from $(FROM) to $(TO) --burn-cap 0.5
-    subprocess.run(["tezos-client", "transfer", amount, "from", source, "to", dest, "--burn-cap 0.5"])
+    call(["tezos-client", "transfer", amount, "from", source, "to", dest, "--burn-cap 0.5"])
 
 
 @tzc.group()
@@ -451,10 +499,3 @@ def interactive_nft_transfer():
     click.echo(out)
     click.echo(err)
 
-    # tezos-client call $CONTRACT_NAME from $ADMIN_ACCOUNT_NAME --entrypoint 'transfer' --arg "$TRANSFERS"  --burn-cap 0.5
-    # TRANSFERS = "{Pair \"$OWNER_ADDRESS\" {Pair \"$TSS_ADDRESS\" (Pair 4 1)}}"
-    # account_completer = WordCompleter(get_account_names())
-    # source = prompt('From account name: ', completer=account_completer)
-    # amount = prompt('XTZ Amount: ')
-    # dest = prompt('And transfer to (account name or address): ', completer=account_completer)
-    # subprocess.run(["tezos-client", "transfer", amount, "from", source, "to", dest, "--burn-cap", "0.5"])
