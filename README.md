@@ -7,23 +7,24 @@ The goal is to offer:
 * Make easier to share your keys (_ex: when working on testnet in a team_)
 * Use JSON for token metadata-description
 
+## Setup 
+Either:
+
+* install [clk-project](https://github.com/clk-project) and the extension with
+```bash 
+curl -sSL https://clk-project.org/install.sh | env CLK_EXTENSIONS=tezos-client bash
+```
+* if you already have [clk-project](https://github.com/clk-project), you can simply install this extension with
+```bash
+clk extension install tezos-client
+```
+
 ## Nota bene
 * This is an early experimental version. :scream:
 * Feel free to kindly open issues. :kissing_heart:
 * Improve the tool :sunglasses:
 
-
- 
-
-## Setup 
-Either:
-
-* install [clk-project](https://github.com/clk-project) and the extension with
-`curl -sSL https://clk-project.org/install.sh | env CLK_EXTENSIONS=tezos-client bash`
-* if you already have [clk-project](https://github.com/clk-project), you can simply install this extension with
-`clk extension install tezos-client`
-
-## TODOs:
+## TODO
 * [ ] Remove the `exec_command` usages
 * [ ] Clean logs and print usage
 * [ ] Handle dry-run 
