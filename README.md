@@ -21,6 +21,8 @@ clk extension install https://github.com/sskorupski/clk_extension_tezos_client
 
 ## Nota bene
 * This is an early experimental version. :scream:
+   
+    => Update the extension: `clk extension update tezos_client`
 * Feel free to kindly open issues. :kissing_heart:
 * Improve the tool :sunglasses:
 
@@ -30,6 +32,7 @@ clk extension install https://github.com/sskorupski/clk_extension_tezos_client
 * [ ] Handle dry-run 
 * [ ] Install without the `install-smartpy.sh` script
 * [ ] Command for Smartpy-cli version
+* [ ] Remove the contract addresses from the "source"
 * [ ] Uninstall Smartpy-cli:
 ```bash
 ifneq ($(shell test -s ~/smartpy-cli || echo false), false)
@@ -53,3 +56,4 @@ endif
 ```
 
 * [ ] Auto-completion for ZSH
+* [ ] Add an option to define a network rpc addresse bases only on the network name 
