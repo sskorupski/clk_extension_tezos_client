@@ -51,3 +51,5 @@ else
 	echo "tezos-client is not installed"
 endif
 ```
+
+* [ ] Auto-completion for ZSH

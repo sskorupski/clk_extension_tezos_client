@@ -227,7 +227,7 @@ def interactive_fa2_deploy():
     transfer_qty = prompt('Transfer qty: ')
 
     contract_filename = ntpath.basename(contract_path)
-    exec_command(f'~/smartpy-cli/SmartPy.sh compile {contract_path} ./compile/{contract_filename}', shell=True)
+    call([SmartPyCli.script_path, 'compile', contract_path, f'./compile/{contract_filename}'])
     contract_dir = [f.path for f in os.scandir("./compile/" + contract_filename) if f.is_dir()][0]
     contract_code = contract_dir + "/step_000_cont_0_contract.tz"
     init_storage = build_fa2_storage(get_address(source_account),
