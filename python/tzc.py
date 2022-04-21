@@ -65,6 +65,13 @@ def install_tezos_client():
 @tzc.command()
 def install():
     """Install required dependencies such as tezos-client and smartpy-cli"""
+
+    npm_version = safe_check_output(['npm', '--version'])
+    if npm_version:
+        LOGGER.info(f'npm {npm_version} detected: skip')
+    else:
+        call(split('sudo apt install nodejs npm'))
+
     smpy_version = client_version()
     if smpy_version:
         LOGGER.info(f'smartpy-cli {smpy_version} detected: skip')
