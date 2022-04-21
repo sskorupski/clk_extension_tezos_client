@@ -1,0 +1,1 @@
+distib>=0.3.4 # Could be missing on some distribution
