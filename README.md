@@ -12,11 +12,11 @@ Either:
 
 * install [clk-project](https://github.com/clk-project) and the extension with
 ```bash 
-curl -sSL https://clk-project.org/install.sh | env CLK_EXTENSIONS=tezos-client bash
+curl -sSL https://clk-project.org/install.sh | env CLK_EXTENSIONS=https://github.com/sskorupski/clk_extension_tezos_client bash
 ```
 * if you already have [clk-project](https://github.com/clk-project), you can simply install this extension with
 ```bash
-clk extension install tezos-client
+clk extension install https://github.com/sskorupski/clk_extension_tezos_client
 ```
 
 ## Nota bene
