@@ -104,7 +104,7 @@ def tzc_network():
 def set_network(rpc_link):
     """Set the RPC tezos node address"""
     LOGGER.info(f'Configuring tezos-client network with {rpc_link}')
-    call(["tezos-client", "--endpoint", rpc_link, "config", "update"])
+    call(["tezos-client", "--endpoint", rpc_link, "config", "update"], stderr=subprocess.DEVNULL)
     LOGGER.info(f'Result:')
     call(["tezos-client", "config", "show"], stderr=subprocess.DEVNULL)
 
