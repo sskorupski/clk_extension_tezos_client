@@ -7,7 +7,7 @@ The goal is to offer:
 * Make easier to share your keys (_ex: when working on testnet in a team_)
 * Use JSON for token metadata-description
 
-## Setup 
+## Setup  and configuration
 Either:
 
 * install [clk-project](https://github.com/clk-project) and the extension with
@@ -18,6 +18,7 @@ curl -sSL https://clk-project.org/install.sh | env CLK_EXTENSIONS=https://github
 ```bash
 clk extension install https://github.com/sskorupski/clk_extension_tezos_client
 ```
+* Execute `clk tzc install`
 
 ## Nota bene
 * This is an early experimental version. :scream:
@@ -28,6 +29,7 @@ clk extension install https://github.com/sskorupski/clk_extension_tezos_client
 
 ## TODO
 * [ ] Remove the `exec_command` usages
+* [ ] Create a lib module or make an MR on clk project
 * [ ] Clean logs and print usage
 * [ ] Handle dry-run 
 * [ ] Install without the `install-smartpy.sh` script

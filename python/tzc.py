@@ -11,16 +11,42 @@ from pathlib import Path
 from shlex import split
 
 import click
-from clk.decorators import argument
+from clk.decorators import argument, command
 from clk.decorators import group
 from clk.decorators import option
-from clk.lib import call, check_output, safe_check_output
+from clk.lib import call, check_output, safe_check_output, read
 from clk.log import get_logger
 from distlib.compat import raw_input
 from prompt_toolkit import prompt
 from prompt_toolkit.completion import WordCompleter
 
 LOGGER = get_logger(__name__)
+
+
+def safe_json_read_array(path):
+    r = read(path)
+    if r:
+        return json.loads(r)
+    else:
+        LOGGER.debug(f"No content for path={path}, returning empty array in place")
+        return []
+
+
+def safe_json_read_object(path):
+    r = read(path)
+    if r:
+        return json.loads(r)
+    else:
+        LOGGER.debug(f"No content for path={path}, returning empty object in place")
+        return {}
+
+
+def echo_list(elems, **kwargs):
+    res = sorted(elems, key=kwargs['sort_key']) if 'sort_key' in kwargs else elems
+    res = '\n'.join(list(map(kwargs['formatter'], res))) if 'formatter' in kwargs else res
+    click.echo(res)
+
+    # click.echo('\n - '.join(elems(map(formatter, elems))))
 
 
 def exec_command(command, shell=False):
@@ -33,17 +59,26 @@ def exec_command(command, shell=False):
 
 @group()
 def tzc():
-    """Commands to play with tezos-client"""
+    """Commands to play with tezos-client
+
+    While playing with the tezos block chain, this command aims to make it easier to use the underlying tezos-client command.
+    See:
+    \t- Tezos - https://tezos.com \r
+    \t- https://tezos.gitlab.io/shell/cli-commands.html
+    """
 
 
 class SmartPyCli:
     clk_install_script_path = str(Path.home()) + '/.config/clk/extensions/tezos_client/install-smartpy.sh'
-    dir_path = str(Path.home()) + '/smartpy-cli/'
-    script_path = dir_path + 'SmartPy.sh'
+    base_dir = str(Path.home()) + '/smartpy-cli/'
+    script_path = base_dir + 'SmartPy.sh'
 
 
 class TezosClient:
     clk_install_script_path = str(Path.home()) + '/.config/clk/extensions/tezos_client/install-tezos-client.sh'
+    base_dir = str(Path.home()) + '/.tezos-client/'
+    config_path = base_dir + 'config'
+    contracts_path = base_dir + 'contracts'
 
 
 def client_version():
@@ -63,35 +98,35 @@ def install_tezos_client():
 
 
 @tzc.command()
-def install():
+@option('--rpc', help='The Tezos RPC node to connect')
+def install(rpc):
     """Install required dependencies such as tezos-client and smartpy-cli"""
 
     npm_version = safe_check_output(['npm', '--version'])
     if npm_version:
-        LOGGER.info(f'npm {npm_version} detected: skip')
+        LOGGER.status(f'npm {npm_version} detected: skip')
     else:
         call(split('sudo apt install nodejs npm'))
 
     smpy_version = client_version()
     if smpy_version:
-        LOGGER.info(f'smartpy-cli {smpy_version} detected: skip')
+        LOGGER.status(f'smartpy-cli {smpy_version} detected: skip')
     else:
         install_smartpy_cli()
 
     tzc_version = safe_check_output(['tezos-client', '--version'])
     if tzc_version:
-        LOGGER.info(f'tezos-clients {tzc_version} detected: skip')
+        LOGGER.status(f'tezos-clients {tzc_version} detected: skip')
     else:
         install_tezos_client()
 
-
-@tzc.command()
-def uninstall():
-    """Remove required dependencies such as tezos-client and smartpy-cli"""
-    smpy_version = client_version()
-    if smpy_version:
-        LOGGER.info("smartpy-cli detected: skip")
-    install_smartpy_cli()
+    client_endpoint = get_config();
+    if client_endpoint and client_endpoint['endpoint']:
+        LOGGER.status(f'tezos-client endpoint: {client_endpoint["endpoint"]}')
+    else:
+        if not rpc:
+            rpc = prompt('RPC address (see: https://tezostaquito.io/docs/rpc_nodes/) >')
+        click.get_current_context().invoke(set_network, rpc)
 
 
 @tzc.group(name="network")
@@ -103,7 +138,7 @@ def tzc_network():
 @argument("rpc-link", envvar='RPC_LINK', help="RPC tezos node address")
 def set_network(rpc_link):
     """Set the RPC tezos node address"""
-    LOGGER.info(f'Configuring tezos-client network with {rpc_link}')
+    LOGGER.status(f'Configuring tezos-client network with {rpc_link}')
     call(["tezos-client", "--endpoint", rpc_link, "config", "update"], stderr=subprocess.DEVNULL)
     LOGGER.info(f'Result:')
     call(["tezos-client", "config", "show"], stderr=subprocess.DEVNULL)
@@ -111,12 +146,12 @@ def set_network(rpc_link):
 
 def get_config():
     return json.loads(
-        safe_check_output(split("tezos-client config show"))
+        read(TezosClient.config_path)
     )
 
 
 @tzc_network.command(name="show")
-def show_config():
+def network_show():
     """Show tezos-client configuration."""
     config = get_config()
     if "endpoint" in config:
@@ -130,10 +165,45 @@ def tzc_account():
 
 @tzc_account.command(name="show")
 @option("--no-contracts", default=False, is_flag=True, help="Do not show contracts accounts")
-def show_accounts(no_contracts):
+def account_show(no_contracts):
     """List configured accounts usable by the client."""
     kind = "addresses" if no_contracts else "contracts"
     click.echo(safe_check_output(split("tezos-client list known " + kind)))
+
+
+@tzc.group(name="contract")
+def contract():
+    """Play with contracts"""
+
+
+def get_contracts():
+    return safe_json_read_array(TezosClient.contracts_path)
+
+
+def get_contract_alias():
+    return list(map(lambda x: x['name'], get_contracts()))
+
+
+@contract.command(name="show")
+@option("--alias", help="Show the contract address for the given alias")
+def contracts_show(alias):
+    """List known contracts alias and address"""
+
+    def formatter(x):
+        return f"{x['name']:>15} : {x['value']}"
+
+    def sort_key(x):
+        return x['name']
+
+    if alias:
+        c = next((x for x in get_contracts() if x['name'] == alias))
+        if c:
+            click.echo(c['value'])
+    else:
+        echo_list(get_contracts(),
+              formatter=formatter,
+              sort_key=sort_key
+              )
 
 
 @tzc.group()
@@ -272,7 +342,7 @@ def nft_path():
 
 
 @tzc_account.command(name="export")
-@option("--account", help="The account name to export_account")
+@option("--account", help="The account name to export")
 @option("--force", is_flag=True, help="Overwrite the export account if exists")
 def export_account(account, force):
     """Export accounts keys"""
@@ -505,4 +575,3 @@ def interactive_nft_transfer():
     out, err = cmd.communicate()
     click.echo(out)
     click.echo(err)
-
