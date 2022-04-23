@@ -84,14 +84,6 @@ def echo_obj(elems, **kwargs):
     click.echo(res)
 
 
-def exec_command(command, shell=False):
-    LOGGER.action(command)
-    args = command.split(' ')
-    proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell)
-    out, err = proc.communicate()
-    return out, err, proc.returncode
-
-
 def stream_command(command):
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     while True:
@@ -104,7 +96,7 @@ def stream_command(command):
 
     if rc:
         rich.print(Panel(":no_entry: "
-                             + f"{' '.join(command)} :\n\n{process.stderr.read().decode('utf-8')}"))
+                         + f"{' '.join(command)} :\n\n{process.stderr.read().decode('utf-8')}"))
     else:
         rich.print(Panel('[bold green]:heavy_check_mark: [/bold green] ' + ' '.join(command)))
 
@@ -322,6 +314,7 @@ def account_import(alias, verbose, force):
             stream_command(split(
                 f'tezos-client import secret key {alias} {account["secret_key"]["value"]}{force_flag}'))
 
+
 @account.command(name="show")
 def account_show():
     """List configured accounts usable by the client."""
@@ -379,7 +372,7 @@ def network_set(rpc_link):
 
 @network.command(name="show")
 def network_show():
-    """Show tezos-client configuration."""
+    """Show tezos-client node configuration."""
     config = safe_json_read_object(TezosClient.config_path)
     if "endpoint" in config:
         endpoint = config["endpoint"]

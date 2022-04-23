@@ -28,13 +28,10 @@ clk extension install https://github.com/sskorupski/clk_extension_tezos_client
 * Improve the tool :sunglasses:
 
 ## TODO
-* [ ] Remove the `exec_command` usages
 * [ ] Create a lib module or make an MR on clk project
-* [ ] Clean logs and print usage
 * [ ] Handle dry-run 
 * [ ] Install without the `install-smartpy.sh` script
 * [ ] Command for Smartpy-cli version
-* [ ] Remove the contract addresses from the "source"
 * [ ] Uninstall Smartpy-cli:
 ```bash
 ifneq ($(shell test -s ~/smartpy-cli || echo false), false)
