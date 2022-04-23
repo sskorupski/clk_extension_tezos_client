@@ -20,6 +20,20 @@ clk extension install https://github.com/sskorupski/clk_extension_tezos_client
 ```
 * Execute `clk tzc install`
 
+## Common commands
+
+* Transfer XTZ from an account to another account : `clk tzc acount transfer`
+* Contract deployment: `clk tzc account deploy-fa2`
+* Mint NFT: `clk nft mint`
+
+  The command will prompt you the required information.
+
+  **NB:** For the _NFT owner_ input, currently you need to provide an account known by the
+  tezos-client. If you need to make another account as the nft provider, first make a known address
+  as the owner and then use the `clk tzc nft transfer` command.
+
+* Transfer NFT: `clk tzc nft transfer`
+
 ## Nota bene
 * This is an early experimental version. :scream:
    
